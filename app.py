@@ -9,6 +9,18 @@ from aiohttp_jwt import JWTMiddleware
 from mongoengine import connect
 from addons.database_blacklist.blacklist_helpers import is_token_revoked
 from addons.redis.my_redis import MyRedis
+from aiohttp_middlewares import (
+    cors_middleware,
+    error_middleware,
+)
+
+ConfigDefaults = {
+    'listen': '0.0.0.0 8080',  # Can be multiline
+    'backlog': 128,
+    'rootdir': '',
+    'servertokens': 'full',  # Controls whether 'Server' response header field is included ('full') or faked 'prod' ()
+    'cors': '',
+}
 
 
 class WebService(asab.Application):
@@ -23,9 +35,11 @@ class WebService(asab.Application):
         websvc = self.get_service("asab.WebService")
 
         # Create a dedicated web container
-        container = asab.web.WebContainer(websvc, 'webservice:yawes')
+        container = asab.web.WebContainer(websvc, 'worklogs:api')
 
-        # Config routes
+        # Enable CORS to CORS middleware
+        container.WebApp.middlewares.append(cors_middleware(origins=(asab.Config["clients"]["source_ip"],)))
+
         route_auth.route.add_to_router(container.WebApp.router, prefix='/api/auth')
         route_user.route.add_to_router(container.WebApp.router, prefix='/api/users')
         route_worklogs.route.add_to_router(container.WebApp.router, prefix='/api/worklogs')
@@ -75,5 +89,6 @@ class WebService(asab.Application):
 
 if __name__ == '__main__':
     app = WebService()
+
     print("WorkLogs Service is running!")
     app.run()

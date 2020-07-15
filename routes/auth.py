@@ -9,8 +9,11 @@ from addons.utils import get_unprocessable_request
 
 route = RouteCollector()
 
+# Handler should be handled with CORS
+# container.WebApp['aiohttp_cors'].add(route)
 
-@route('/login', method='POST')
+
+@route('/login', methods=['POST', 'OPTIONS'])
 async def auth_login(request):
     """
         Endpoint to login into the system
@@ -18,10 +21,11 @@ async def auth_login(request):
     """
 
     try:
-        json_data = await request.json()
-        resp = User().validate_user(json_data)
-        return aiohttp.web.json_response(resp)
-    except:
+        if request.method == 'POST':
+            json_data = await request.json()
+            resp = User().validate_user(json_data)
+            return aiohttp.web.json_response(resp)
+    except Exception as e:
         return get_unprocessable_request()
 
 
