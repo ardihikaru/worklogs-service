@@ -23,7 +23,7 @@ def mongo_list_to_dict(mongo_resp):
 def mongo_dict_to_dict(mongo_resp, is_dict=False):
     """
         Casts Fields from MongoDB response into simpler dictionary; Casted keys are:
-        1. From `["_id"]["$oid"]` into ["id"]
+        1. From `["id"]["$oid"]` into ["id"]
         2. From `["created_at"]["$date"]` into ["created_at"]
         3. From `["updated_at"]["$date"]` into ["updated_at"]
     """
@@ -33,8 +33,8 @@ def mongo_dict_to_dict(mongo_resp, is_dict=False):
     else:
         data = json.loads(mongo_resp)
 
-    data["_id"] = data["_id"]["$oid"]
-    # data.pop("_id")
+    data["id"] = data["_id"]["$oid"]
+    data.pop("_id")
 
     if "created_at" in data and \
             data["created_at"] is not None and \
@@ -131,3 +131,12 @@ def get_synced_date(date_str, reduced_day=1):
     date_obj_new = date_obj - timedelta(days=reduced_day)
     date_time = date_obj_new.strftime("%Y-%m-%d")
     return date_time
+
+
+def pop_if_any(data, key):
+    try:
+        if key in data:
+            data.pop(key)
+    except:
+        pass
+    return data
