@@ -4,6 +4,7 @@ import asab.web.rest
 import asab.web.session
 from routes import auth as route_auth
 from routes import user as route_user
+from routes import worklogs as route_worklogs
 from aiohttp_jwt import JWTMiddleware
 from mongoengine import connect
 from addons.database_blacklist.blacklist_helpers import is_token_revoked
@@ -27,6 +28,7 @@ class WebService(asab.Application):
         # Config routes
         route_auth.route.add_to_router(container.WebApp.router, prefix='/api/auth')
         route_user.route.add_to_router(container.WebApp.router, prefix='/api/users')
+        route_worklogs.route.add_to_router(container.WebApp.router, prefix='/api/worklogs')
 
         # Enable exception to JSON exception middleware
         container.WebApp.middlewares.append(asab.web.rest.JsonExceptionMiddleware)
@@ -35,8 +37,8 @@ class WebService(asab.Application):
         container.WebApp.middlewares.append(JWTMiddleware(
             secret_or_pub_key=asab.Config["jwt"]["secret_key"],
             request_property="user",
-            whitelist=[r"/api/users*", r"/api/auth/login"],  # use this to disable access_token validation
-            # whitelist=[r"/api/auth/login"],  # Final code: Please enable this one instead
+            # whitelist=[r"/api/users*", r"/api/auth/login"],  # use this to disable access_token validation
+            whitelist=[r"/api/auth/login"],  # Final code: Please enable this one instead
             token_getter=self.get_token,
             is_revoked=self.is_revoked,
         ))

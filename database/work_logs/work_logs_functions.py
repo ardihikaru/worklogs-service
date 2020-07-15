@@ -1,18 +1,14 @@
 """
-    List of functions to manage actions (Create, Read, Update, Delete) of `Users` data
+    List of functions to manage actions (Create, Read, Update, Delete) of `WorkLogs` data
 """
 
-import asab
 from mongoengine import DoesNotExist, NotUniqueError, Q, ValidationError
 from addons.utils import mongo_list_to_dict, mongo_dict_to_dict
 from datetime import datetime
-import jwt
-from datetime import timedelta
 
 
 def insert_new_data(db_model, new_data, msg):
     try:
-        new_data.pop("password_confirm")
         inserted_data = db_model(**new_data).save()
 
     except ValidationError as e:
@@ -22,7 +18,6 @@ def insert_new_data(db_model, new_data, msg):
             return False, None, err
         except:
             return False, None, str(e)
-
     except NotUniqueError as e:
         return False, None, str(e)
 
@@ -37,11 +32,12 @@ def insert_new_data(db_model, new_data, msg):
 
 
 # variable `args` usage can be used later to filter the given results
-def get_all_users(db_model, args=None):
+def get_data(db_model, args=None):
     try:
         data = db_model.objects().to_json()
-    except DoesNotExist:
+    except DoesNotExist as e:
         return False, None, 0
+
     data_dict = mongo_list_to_dict(data)
 
     if len(data_dict) > 0:
@@ -59,17 +55,6 @@ def get_data_by_id(db_model, _id):
     dict_data = mongo_dict_to_dict(data)
 
     return True, dict_data, None
-
-
-def get_data_by_username(db_model, username):
-    try:
-        data = db_model.objects.get(username=username).to_json()
-    except Exception as e:
-        return False, None
-
-    dict_data = mongo_dict_to_dict(data)
-
-    return True, dict_data
 
 
 def del_data_by_id(db_model, _id):
@@ -93,12 +78,17 @@ def upd_data_by_id(db_model, _id, new_data):
     return True, new_data, None
 
 
-def store_jwt_data(json_data):
-    payload = {
-        # "username": json_data["username"],
-        "name": json_data["username"] + ":" + json_data["password"],  # username and pass joined by double colon
-        'exp': datetime.utcnow() + timedelta(seconds=int(asab.Config["jwt"]["exp_delta_seconds"]))
-    }
-    access_token = jwt.encode(payload, asab.Config["jwt"]["secret_key"], algorithm=asab.Config["jwt"]["algorithm"])
-    access_token_expired = jwt.decode(access_token, verify=False)["exp"]
-    return access_token.decode(), access_token_expired
+def get_data_between_date(db_model, start_date, end_date):
+    try:
+        data = db_model.objects(
+            Q(created_at__gte=start_date) & Q(created_at__lte=end_date)).all().to_json()
+
+    except DoesNotExist:
+        return False, [], "Data not found", 0
+
+    dict_data = mongo_list_to_dict(data)
+
+    if len(dict_data) > 0:
+        return True, dict_data, None, len(dict_data)
+    else:
+        return False, None, "Data not found", 0

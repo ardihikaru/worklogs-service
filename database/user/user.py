@@ -1,5 +1,5 @@
 """
-    Class Model for USERS Collections
+    Class Model for `Users` Collections
 """
 
 from mongoengine import Document, StringField, DateTimeField, EmailField
