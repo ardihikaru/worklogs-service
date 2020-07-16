@@ -48,6 +48,12 @@ def mongo_dict_to_dict(mongo_resp, is_dict=False):
         data["updated_at"] = datetime.fromtimestamp(int(str(data["updated_at"]["$date"])[:-3])).strftime("%Y-%m-%d, "
                                                                                                          "%H:%M:%S")
 
+    if "work_datetime" in data and \
+            data["work_datetime"] is not None and \
+            "$date" in data["work_datetime"]:
+        data["work_datetime"] = datetime.fromtimestamp(int(str(data["work_datetime"]["$date"])[:-3])).strftime("%Y-%m-%d, "
+                                                                                                         "%H:%M:%S")
+
     return data
 
 

@@ -14,6 +14,7 @@ import asab
 from addons.redis.my_redis import MyRedis
 from multidict import MultiDictProxy
 
+
 class User(MyRedis):
     def __init__(self):
         super().__init__(asab.Config)
@@ -150,9 +151,6 @@ class User(MyRedis):
     def __extract_get_args(self, get_args):
         if get_args is not None:
             if not isinstance(get_args, MultiDictProxy):
-                # print(" --- iya ini MultiDictProxy ...")
-                # pass
-            # else:
                 if "filter" in get_args:
                     get_args["filter"] = json_load_str(get_args["filter"], "dict")
                 if "range" in get_args:

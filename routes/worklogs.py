@@ -10,8 +10,8 @@ from addons.utils import get_unprocessable_request
 route = RouteCollector()
 
 
-@route('', methods=['POST', 'GET'])
-async def index(request):
+@route('', methods=['POST', 'GET', 'OPTIONS'])
+async def index_worklogs(request):
     """
         Endpoint to:
          1. GET all worklogs data
@@ -29,7 +29,6 @@ async def index(request):
     if request.method == 'POST':
         try:
             json_data = await request.json()
-            print(" --- json_data:", json_data)
             resp = DataController().register(json_data)
         except:
             return get_unprocessable_request()
@@ -37,12 +36,13 @@ async def index(request):
         return aiohttp.web.json_response(resp)
 
     if request.method == 'GET':
-        resp = DataController().get_data()
+        params = request.rel_url.query
+        resp = DataController().get_data(params)
         return aiohttp.web.json_response(resp)
 
 
 @route('/{_id}', methods=['GET', 'DELETE', 'PUT'])
-async def index_by(request):
+async def index_worklogs_by(request):
     """
         Endpoint to:
          1. GET worklogs data by id
@@ -57,10 +57,13 @@ async def index_by(request):
 
     try:
         _id = str(request.match_info['_id'])
+        if _id is None:
+            _id = str(request.match_info['id'])
     except:
         return get_unprocessable_request()
 
     if request.method == 'GET':
+
         resp = DataController().get_data_by_id(_id)
         return aiohttp.web.json_response(resp)
     elif request.method == 'DELETE':

@@ -3,12 +3,15 @@
 """
 
 from mongoengine import DoesNotExist, NotUniqueError, Q, ValidationError
-from addons.utils import mongo_list_to_dict, mongo_dict_to_dict
+from addons.utils import mongo_list_to_dict, mongo_dict_to_dict, pop_if_any
 from datetime import datetime
 
 
 def insert_new_data(db_model, new_data, msg):
     try:
+        if "work_datetime" in new_data:
+            new_data["work_datetime"] = new_data["work_datetime"].replace("T", " ")
+            new_data["work_datetime"] = new_data["work_datetime"].replace(".000Z", "")
         inserted_data = db_model(**new_data).save()
 
     except ValidationError as e:
@@ -68,6 +71,16 @@ def del_data_by_id(db_model, _id):
 
 def upd_data_by_id(db_model, _id, new_data):
     try:
+        pop_if_any(new_data, "created_at")
+        pop_if_any(new_data, "updated_at")
+        pop_if_any(new_data, "id")
+        if "work_datetime" in new_data and isinstance(new_data["work_datetime"], str):
+            if "000Z" in new_data["work_datetime"]:
+                new_data["work_datetime"] = new_data["work_datetime"].replace("T", " ")
+                new_data["work_datetime"] = new_data["work_datetime"].replace(".000Z", "")
+            else:
+                new_data["work_datetime"] = new_data["work_datetime"].replace(",", "")
+
         db_model.objects.get(id=_id).update(**new_data)
     except Exception as e:
         return False, None, str(e)
