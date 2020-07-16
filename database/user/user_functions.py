@@ -4,7 +4,7 @@
 
 import asab
 from mongoengine import DoesNotExist, NotUniqueError, Q, ValidationError
-from addons.utils import mongo_list_to_dict, mongo_dict_to_dict
+from addons.utils import mongo_list_to_dict, mongo_dict_to_dict, pop_if_any
 from datetime import datetime
 import jwt
 from datetime import timedelta
@@ -26,7 +26,7 @@ def insert_new_data(db_model, new_data, msg):
     except NotUniqueError as e:
         return False, None, str(e)
 
-    new_data["_id"] = str(inserted_data.id)
+    new_data["id"] = str(inserted_data.id)
     new_data["created_at"] = inserted_data.created_at.strftime("%Y-%m-%d, %H:%M:%S")
     new_data["updated_at"] = inserted_data.updated_at.strftime("%Y-%m-%d, %H:%M:%S")
 
@@ -83,6 +83,10 @@ def del_data_by_id(db_model, _id):
 
 def upd_data_by_id(db_model, _id, new_data):
     try:
+        pop_if_any(new_data, "password")
+        pop_if_any(new_data, "created_at")
+        pop_if_any(new_data, "updated_at")
+        pop_if_any(new_data, "id")
         db_model.objects.get(id=_id).update(**new_data)
     except Exception as e:
         return False, None, str(e)

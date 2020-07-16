@@ -28,18 +28,18 @@ async def index(request):
          1. PUT (update) a specific user data
             Try: curl http://localhost:8080/api/users -X POST -H "Content-Type: application/json"
                     -d '{
-                            "_id": {String},
+                            "id": {String},
                             "name": "Muhammad Febrian Ardiansyah",
                     }'
          1. DELETE a specific user data (single ID)
             Try: curl http://localhost:8080/api/users -X DELETE -H "Content-Type: application/json"
                     -d '{
-                            "_id": {String}
+                            "id": {String}
                     }'
          2. DELETE list of user data (multiple IDs)
             Try: curl http://localhost:8080/api/users -X DELETE -H "Content-Type: application/json"
                     -d '{
-                            "_id": [{String}, {String}]
+                            "id": [{String}, {String}]
                     }'
     """
 
@@ -53,7 +53,8 @@ async def index(request):
         return aiohttp.web.json_response(resp)
 
     if request.method == 'GET':
-        resp = User().get_users()
+        params = request.rel_url.query
+        resp = User().get_users(params)
         return aiohttp.web.json_response(resp)
 
     if request.method == 'PUT':
@@ -73,3 +74,41 @@ async def index(request):
             return get_unprocessable_request()
 
         return aiohttp.web.json_response(resp)
+
+
+@route('/{_id}', methods=['GET', 'DELETE', 'PUT'])
+async def index_by(request):
+    """
+        Endpoint to:
+         1. GET user data by id
+            Try: curl http://localhost:8080/api/users/{_id}
+         2. DELETE user data by id
+            Try: curl http://localhost:8080/api/users/{_id} -X DELETE
+         3. PUT (Edit) user data by id
+            Try: curl http://localhost:8080/api/users/{_id}
+                    -X POST -H "Content-Type: application/json" -d '{"name":"Kucing"}'
+    """
+
+
+    try:
+        _id = str(request.match_info['_id'])
+        if _id is None:
+            _id = str(request.match_info['id'])
+    except:
+        return get_unprocessable_request()
+
+    if request.method == 'GET':
+        resp = User().get_data_by_id(_id)
+        return aiohttp.web.json_response(resp)
+    elif request.method == 'DELETE':
+        resp = User().delete_data_by_id_one(_id)
+        return aiohttp.web.json_response(resp)
+    elif request.method == 'PUT':
+        try:
+            json_data = await request.json()
+            resp = User().update_data_by_id(_id, json_data)
+            return aiohttp.web.json_response(resp)
+        except:
+            return get_unprocessable_request()
+    else:
+        return get_unprocessable_request()

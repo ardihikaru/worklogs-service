@@ -2,12 +2,13 @@
    This is a Controller class to manage any action related with /api/worklogs endpoint
 """
 
-from addons.utils import get_json_template, get_synced_date
+from addons.utils import get_json_template, get_synced_date, json_load_str
 from database.work_logs.work_logs import WorkLogsModel as DataModel
 from database.work_logs.work_logs_functions import get_data, del_data_by_id, upd_data_by_id, \
     get_data_by_id, insert_new_data, get_data_between_date
 import asab
 from addons.redis.my_redis import MyRedis
+from multidict import MultiDictProxy
 
 
 class WorkLogs(MyRedis):
@@ -56,7 +57,20 @@ class WorkLogs(MyRedis):
             self.set_msg("Collecting data success.")
             self.set_resp_data(users)
 
+    def __extract_get_args(self, get_args):
+        if get_args is not None:
+            if not isinstance(get_args, MultiDictProxy):
+                if "filter" in get_args:
+                    get_args["filter"] = json_load_str(get_args["filter"], "dict")
+                if "range" in get_args:
+                    get_args["range"] = json_load_str(get_args["range"], "list")
+                if "sort" in get_args:
+                    get_args["sort"] = json_load_str(get_args["sort"], "list")
+
+        return get_args
+
     def get_data(self, args=None):
+        args = self.__extract_get_args(args)
         self.trx_get_data(args=args)
         return get_json_template(response=self.resp_status, results=self.resp_data, message=self.msg,
                                  total=self.total_records)

@@ -12,6 +12,7 @@ from database.user.user_functions import get_all_users, store_jwt_data, get_data
     del_data_by_id, upd_data_by_id, get_data_by_id, insert_new_data
 import asab
 from addons.redis.my_redis import MyRedis
+from multidict import MultiDictProxy
 
 
 class User(MyRedis):
@@ -149,12 +150,13 @@ class User(MyRedis):
 
     def __extract_get_args(self, get_args):
         if get_args is not None:
-            if "filter" in get_args:
-                get_args["filter"] = json_load_str(get_args["filter"], "dict")
-            if "range" in get_args:
-                get_args["range"] = json_load_str(get_args["range"], "list")
-            if "sort" in get_args:
-                get_args["sort"] = json_load_str(get_args["sort"], "list")
+            if not isinstance(get_args, MultiDictProxy):
+                if "filter" in get_args:
+                    get_args["filter"] = json_load_str(get_args["filter"], "dict")
+                if "range" in get_args:
+                    get_args["range"] = json_load_str(get_args["range"], "list")
+                if "sort" in get_args:
+                    get_args["sort"] = json_load_str(get_args["sort"], "list")
 
         return get_args
 
@@ -174,20 +176,24 @@ class User(MyRedis):
             self.set_msg("Deleting data success.")
 
     def delete_data_by_id(self, json_data):
-        if "_id" in json_data:
-            if isinstance(json_data["_id"], str):
-                self.trx_del_data_by_id(json_data["_id"])
-            elif isinstance(json_data["_id"], list):
-                for user_id in json_data["_id"]:
+        if "id" in json_data:
+            if isinstance(json_data["id"], str):
+                self.trx_del_data_by_id(json_data["id"])
+            elif isinstance(json_data["id"], list):
+                for user_id in json_data["id"]:
                     self.trx_del_data_by_id(user_id)
             else:
                 return get_unprocessable_request_json()
             resp_data = {}
             if self.resp_status:
-                resp_data = "Deleted ids: {}".format(json_data["_id"])
+                resp_data = "Deleted ids: {}".format(json_data["id"])
             return get_json_template(response=self.resp_status, results=resp_data, total=-1, message=self.msg)
         else:
             return get_unprocessable_request_json()
+
+    def delete_data_by_id_one(self, _id):
+        self.trx_del_data_by_id(_id)
+        return get_json_template(response=self.resp_status, results=self.resp_data, total=-1, message=self.msg)
 
     def trx_upd_data_by_id(self, userid, json_data):
         is_valid, user_data, msg = upd_data_by_id(UserModel, userid, new_data=json_data)
@@ -198,15 +204,9 @@ class User(MyRedis):
 
         self.set_resp_data(user_data)
 
-    def update_data_by_id(self, json_data):
-        if "_id" in json_data:
-            user_id = json_data["_id"]
-            json_data.pop("_id")
-            self.trx_upd_data_by_id(user_id, json_data)
-            return get_json_template(response=self.resp_status, results=self.resp_data, total=-1, message=self.msg)
-        else:
-            return get_unprocessable_request_json()
-
+    def update_data_by_id(self, _id, json_data):
+        self.trx_upd_data_by_id(_id, json_data)
+        return get_json_template(response=self.resp_status, results=self.resp_data, total=-1, message=self.msg)
 
     def trx_get_data_by_id(self, userid):
         is_valid, user_data, _ = get_data_by_id(UserModel, userid)
