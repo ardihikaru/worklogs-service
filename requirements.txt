@@ -1,4 +1,4 @@
-aiohttp==3.6.2
+aiohttp==3.7.4
 aiohttp-jwt==0.6.1
 aiohttp-route-decorator==0.1.4
 aiozk==0.26.0
